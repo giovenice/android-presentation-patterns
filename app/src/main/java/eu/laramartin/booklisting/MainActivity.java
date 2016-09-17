@@ -40,7 +40,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Configure Retrofit
         Retrofit retrofit = new Retrofit.Builder()
+                // Base URL can change for endpoints (dev, staging, live..)
                 .baseUrl("https://www.googleapis.com")
+                // Takes care of converting the JSON response into java objects
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         // Create the Google Book API Service
@@ -56,10 +58,10 @@ public class MainActivity extends AppCompatActivity {
         listView = (ListView) findViewById(R.id.listView);
         listView.setAdapter(adapter);
 
-        imageButton.setOnClickListener( new View.OnClickListener() {
+        imageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (isInternetConnectionAvailable()){
+                if (isInternetConnectionAvailable()) {
                     performSearch();
                 } else {
                     Toast.makeText(MainActivity.this, R.string.error_no_internet,
@@ -75,28 +77,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void performSearch() {
-        String formatUserInput = getUserInput().trim().replaceAll("\\s+","+");
-        service.search("search+" + formatUserInput).enqueue(new Callback<BookSearchResult>() {
-            @Override
-            public void onResponse(Call<BookSearchResult> call, Response<BookSearchResult> books) {
-                updateUi(books.body().getBooks());
-            }
+        String formatUserInput = getUserInput().trim().replaceAll("\\s+", "+");
+        // Just call the method on the GoogleBooksService
+        service.search("search+" + formatUserInput)
+                // enqueue runs the request on a separate thread
+                .enqueue(new Callback<BookSearchResult>() {
 
-            @Override
-            public void onFailure(Call<BookSearchResult> call, Throwable t) {
-                t.printStackTrace();
-            }
-        });
+                    // We receive a Response with the content we expect already parsed
+                    @Override
+                    public void onResponse(Call<BookSearchResult> call, Response<BookSearchResult> books) {
+                        updateUi(books.body().getBooks());
+                    }
+
+                    // In case of error, this method gets called
+                    @Override
+                    public void onFailure(Call<BookSearchResult> call, Throwable t) {
+                        t.printStackTrace();
+                    }
+                });
     }
 
-    private boolean isInternetConnectionAvailable(){
+    private boolean isInternetConnectionAvailable() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
         return activeNetwork.isConnectedOrConnecting();
     }
 
-    private void updateUi(List<Book> books){
-        if (books.isEmpty()){
+    private void updateUi(List<Book> books) {
+        if (books.isEmpty()) {
             // if no books found, show a message
             textNoDataFound.setVisibility(View.VISIBLE);
         } else {
