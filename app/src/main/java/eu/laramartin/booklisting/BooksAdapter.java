@@ -7,6 +7,8 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import eu.laramartin.booklisting.model.Book;
+
 /**
  * Created by Lara on 11/09/2016.
  */
@@ -28,9 +30,19 @@ public class BooksAdapter extends ArrayAdapter<Book> {
 
         TextView title = (TextView) view.findViewById(R.id.title);
         TextView author = (TextView) view.findViewById(R.id.author);
-        title.setText(book.getTitle());
-        author.setText(book.getAuthor());
-
+        if (book.getVolumeInfo() != null) {
+            title.setText(book.getVolumeInfo().getTitle());
+            if (book.getVolumeInfo().getAuthor() != null) {
+                StringBuilder builder = new StringBuilder();
+                for (String authorName : book.getVolumeInfo().getAuthor()) {
+                    if (builder.length() > 0) {
+                        builder.append(", ");
+                    }
+                    builder.append(authorName);
+                }
+                author.setText(builder.toString());
+            }
+        }
         return view;
     }
 }
