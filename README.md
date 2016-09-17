@@ -2,6 +2,8 @@ This version of the project uses Retrofit instead AsyncTasks.
 
 As example of how to use awesome libraries to get things done instead of doing it "the old way".
 
+Original project from @laramartin as part of the Android Basics Nanodegree.
+
 # Android Book Listing
 - Project **Book Listing** of Android Basics Nanodegree
 - [Android Basics Nanodegree at Udacity.com](https://www.udacity.com/course/android-basics-nanodegree-by-google--nd803).
