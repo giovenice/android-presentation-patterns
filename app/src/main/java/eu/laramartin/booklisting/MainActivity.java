@@ -17,11 +17,12 @@ import java.util.List;
 
 import eu.laramartin.booklisting.model.Book;
 import eu.laramartin.booklisting.model.BookSearchResult;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import rx.Observer;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     TextView textNoDataFound;
     static final String SEARCH_RESULTS = "booksSearchResults";
     GoogleBooksService service;
+    private Subscription subscription;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,20 +81,23 @@ public class MainActivity extends AppCompatActivity {
     private void performSearch() {
         String formatUserInput = getUserInput().trim().replaceAll("\\s+", "+");
         // Just call the method on the GoogleBooksService
-        service.search("search+" + formatUserInput)
-                // enqueue runs the request on a separate thread
-                .enqueue(new Callback<BookSearchResult>() {
-
-                    // We receive a Response with the content we expect already parsed
+        subscription = service.search("search+" + formatUserInput)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<BookSearchResult>() {
                     @Override
-                    public void onResponse(Call<BookSearchResult> call, Response<BookSearchResult> books) {
-                        updateUi(books.body().getBooks());
+                    public void onCompleted() {
+
                     }
 
-                    // In case of error, this method gets called
                     @Override
-                    public void onFailure(Call<BookSearchResult> call, Throwable t) {
-                        t.printStackTrace();
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onNext(BookSearchResult bookSearchResult) {
+                        updateUi(bookSearchResult.getBooks());
                     }
                 });
     }
