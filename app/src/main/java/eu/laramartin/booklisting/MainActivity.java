@@ -17,12 +17,9 @@ import java.util.List;
 
 import eu.laramartin.booklisting.model.Book;
 import eu.laramartin.booklisting.model.BookSearchResult;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 import rx.Observer;
-import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
+import rx.subscriptions.CompositeSubscription;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,24 +29,15 @@ public class MainActivity extends AppCompatActivity {
     ListView listView;
     TextView textNoDataFound;
     static final String SEARCH_RESULTS = "booksSearchResults";
-    GoogleBooksService service;
-    private Subscription subscription;
+    private CompositeSubscription subscriptions = new CompositeSubscription();
+    private BooksViewModel booksViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Configure Retrofit
-        Retrofit retrofit = new Retrofit.Builder()
-                // Base URL can change for endpoints (dev, staging, live..)
-                .baseUrl("https://www.googleapis.com")
-                // Takes care of converting the JSON response into java objects
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        // Create the Google Book API Service
-        service = retrofit.create(GoogleBooksService.class);
-
+        booksViewModel = new BooksViewModel(new BooksInteractorImpl(), AndroidSchedulers.mainThread());
 
         editText = (EditText) findViewById(R.id.editText);
         imageButton = (ImageButton) findViewById(R.id.imageButton);
@@ -78,12 +66,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        subscriptions.unsubscribe();
+    }
+
     private void performSearch() {
         String formatUserInput = getUserInput().trim().replaceAll("\\s+", "+");
         // Just call the method on the GoogleBooksService
-        subscription = service.search("search+" + formatUserInput)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+        subscriptions.add(booksViewModel.search(formatUserInput)
                 .subscribe(new Observer<BookSearchResult>() {
                     @Override
                     public void onCompleted() {
@@ -99,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onNext(BookSearchResult bookSearchResult) {
                         updateUi(bookSearchResult.getBooks());
                     }
-                });
+                }));
     }
 
     private boolean isInternetConnectionAvailable() {
