@@ -16,14 +16,8 @@ import android.widget.Toast;
 import java.util.List;
 
 import eu.laramartin.booklisting.model.Book;
-import eu.laramartin.booklisting.model.BookSearchResult;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements BooksView {
 
     EditText editText;
     ImageButton imageButton;
@@ -31,23 +25,16 @@ public class MainActivity extends AppCompatActivity {
     ListView listView;
     TextView textNoDataFound;
     static final String SEARCH_RESULTS = "booksSearchResults";
-    GoogleBooksService service;
+    private BooksPresenter presenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Configure Retrofit
-        Retrofit retrofit = new Retrofit.Builder()
-                // Base URL can change for endpoints (dev, staging, live..)
-                .baseUrl("https://www.googleapis.com")
-                // Takes care of converting the JSON response into java objects
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        // Create the Google Book API Service
-        service = retrofit.create(GoogleBooksService.class);
-
+        BooksInteractor interactor = new BooksInteractorImpl();
+        presenter = new BooksPresenter(interactor);
+        presenter.bind(this);
 
         editText = (EditText) findViewById(R.id.editText);
         imageButton = (ImageButton) findViewById(R.id.imageButton);
@@ -62,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (isInternetConnectionAvailable()) {
-                    performSearch();
+                    presenter.performSearch(getUserInput());
                 } else {
                     Toast.makeText(MainActivity.this, R.string.error_no_internet,
                             Toast.LENGTH_SHORT).show();
@@ -76,25 +63,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void performSearch() {
-        String formatUserInput = getUserInput().trim().replaceAll("\\s+", "+");
-        // Just call the method on the GoogleBooksService
-        service.search("search+" + formatUserInput)
-                // enqueue runs the request on a separate thread
-                .enqueue(new Callback<BookSearchResult>() {
-
-                    // We receive a Response with the content we expect already parsed
-                    @Override
-                    public void onResponse(Call<BookSearchResult> call, Response<BookSearchResult> books) {
-                        updateUi(books.body().getBooks());
-                    }
-
-                    // In case of error, this method gets called
-                    @Override
-                    public void onFailure(Call<BookSearchResult> call, Throwable t) {
-                        t.printStackTrace();
-                    }
-                });
+    @Override
+    protected void onDestroy() {
+        presenter.unbind();
+        super.onDestroy();
     }
 
     private boolean isInternetConnectionAvailable() {
@@ -103,7 +75,8 @@ public class MainActivity extends AppCompatActivity {
         return activeNetwork.isConnectedOrConnecting();
     }
 
-    private void updateUi(List<Book> books) {
+    @Override
+    public void updateUi(List<Book> books) {
         if (books.isEmpty()) {
             // if no books found, show a message
             textNoDataFound.setVisibility(View.VISIBLE);
