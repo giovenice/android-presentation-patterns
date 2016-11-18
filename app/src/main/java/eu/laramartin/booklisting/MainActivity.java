@@ -15,6 +15,8 @@ import android.widget.Toast;
 
 import java.util.List;
 
+import javax.inject.Inject;
+
 import eu.laramartin.booklisting.model.Book;
 
 public class MainActivity extends AppCompatActivity implements BooksView {
@@ -31,9 +33,7 @@ public class MainActivity extends AppCompatActivity implements BooksView {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        BooksInteractor interactor = new BooksInteractorImpl();
-        presenter = new BooksPresenter(interactor);
+        ((App) getApplication()).getAppComponent().inject(this);
         presenter.bind(this);
 
         editText = (EditText) findViewById(R.id.editText);
@@ -61,6 +61,11 @@ public class MainActivity extends AppCompatActivity implements BooksView {
             Book[] books = (Book[]) savedInstanceState.getParcelableArray(SEARCH_RESULTS);
             adapter.addAll(books);
         }
+    }
+
+    @Inject
+    public void setPresenter(BooksPresenter presenter) {
+        this.presenter = presenter;
     }
 
     @Override

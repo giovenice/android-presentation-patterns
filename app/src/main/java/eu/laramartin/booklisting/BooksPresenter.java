@@ -1,6 +1,8 @@
 package eu.laramartin.booklisting;
 
 
+import javax.inject.Inject;
+
 import eu.laramartin.booklisting.model.BookSearchResult;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -10,6 +12,7 @@ public class BooksPresenter {
     BooksView view;
     private BooksInteractor interactor;
 
+    @Inject
     public BooksPresenter(BooksInteractor interactor) {
         this.interactor = interactor;
     }
