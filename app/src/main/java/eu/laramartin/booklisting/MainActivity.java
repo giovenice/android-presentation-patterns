@@ -78,7 +78,7 @@ public class MainActivity extends LifecycleActivity {
     private void performSearch() {
         String formatUserInput = getUserInput().trim().replaceAll("\\s+", "+");
         // Just call the method on the GoogleBooksService
-        model.setQuery(formatUserInput);
+        model.loadBooks(formatUserInput);
     }
 
     private boolean isInternetConnectionAvailable() {
@@ -100,15 +100,5 @@ public class MainActivity extends LifecycleActivity {
 
     private String getUserInput() {
         return editText.getText().toString();
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        Book[] books = new Book[adapter.getCount()];
-        for (int i = 0; i < books.length; i++) {
-            books[i] = adapter.getItem(i);
-        }
-        outState.putParcelableArray(SEARCH_RESULTS, (Parcelable[]) books);
     }
 }

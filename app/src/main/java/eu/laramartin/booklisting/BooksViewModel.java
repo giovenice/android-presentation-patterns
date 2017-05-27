@@ -32,10 +32,6 @@ class BooksViewModel extends ViewModel {
 
     private MutableLiveData<List<Book>> books;
 
-    public void setQuery(String query) {
-        loadBooks(query);
-    }
-
     LiveData<List<Book>> getBooks() {
         if (books == null) {
             books = new MutableLiveData<List<Book>>();
@@ -43,7 +39,7 @@ class BooksViewModel extends ViewModel {
         return books;
     }
 
-    private void loadBooks(String query) {
+    public void loadBooks(String query) {
         service.search("search+" + query)
                 // enqueue runs the request on a separate thread
                 .enqueue(new Callback<BookSearchResult>() {
