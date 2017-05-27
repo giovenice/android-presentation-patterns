@@ -1,10 +1,16 @@
 package eu.laramartin.booklisting;
 
+import android.arch.lifecycle.Lifecycle;
+import android.arch.lifecycle.LifecycleActivity;
+import android.arch.lifecycle.LifecycleOwner;
+import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
@@ -23,7 +29,7 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends LifecycleActivity {
 
     EditText editText;
     ImageButton imageButton;
@@ -31,23 +37,13 @@ public class MainActivity extends AppCompatActivity {
     ListView listView;
     TextView textNoDataFound;
     static final String SEARCH_RESULTS = "booksSearchResults";
-    GoogleBooksService service;
+
+    BooksViewModel model;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        // Configure Retrofit
-        Retrofit retrofit = new Retrofit.Builder()
-                // Base URL can change for endpoints (dev, staging, live..)
-                .baseUrl("https://www.googleapis.com")
-                // Takes care of converting the JSON response into java objects
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        // Create the Google Book API Service
-        service = retrofit.create(GoogleBooksService.class);
-
 
         editText = (EditText) findViewById(R.id.editText);
         imageButton = (ImageButton) findViewById(R.id.imageButton);
@@ -70,31 +66,19 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        if (savedInstanceState != null) {
-            Book[] books = (Book[]) savedInstanceState.getParcelableArray(SEARCH_RESULTS);
-            adapter.addAll(books);
-        }
+        model = ViewModelProviders.of(this).get(BooksViewModel.class);
+        model.getBooks().observe(this, new Observer<List<Book>>() {
+            @Override
+            public void onChanged(@Nullable List<Book> books) {
+                updateUi(books);
+            }
+        });
     }
 
     private void performSearch() {
         String formatUserInput = getUserInput().trim().replaceAll("\\s+", "+");
         // Just call the method on the GoogleBooksService
-        service.search("search+" + formatUserInput)
-                // enqueue runs the request on a separate thread
-                .enqueue(new Callback<BookSearchResult>() {
-
-                    // We receive a Response with the content we expect already parsed
-                    @Override
-                    public void onResponse(Call<BookSearchResult> call, Response<BookSearchResult> books) {
-                        updateUi(books.body().getBooks());
-                    }
-
-                    // In case of error, this method gets called
-                    @Override
-                    public void onFailure(Call<BookSearchResult> call, Throwable t) {
-                        t.printStackTrace();
-                    }
-                });
+        model.setQuery(formatUserInput);
     }
 
     private boolean isInternetConnectionAvailable() {
